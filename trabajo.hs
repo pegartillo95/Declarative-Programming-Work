@@ -7,7 +7,8 @@ type NumChoices = Int
 type CorrectChoice = Int
 type ChoicesByModel = [CorrectChoice]
 data Question = Question NumChoices ChoicesByModel deriving Show
-data Test = Test [Question] deriving Show
+type QuestionList = [Question]
+data Test = Test QuestionList deriving Show
 
 
 --RespuestasTest data type
@@ -19,13 +20,13 @@ data RespuestaTest = RespuestaTest DNI TestModel Responses deriving Show
 
 --Correccion data type
 type CorrectAnswers = Int
-type Grade = Fractional
+type Grade = Float
 data Correccion = Correccion DNI CorrectAnswers Grade deriving Show
 
 
 
 --Getters
-getQuestions::Test->[Question]
+getQuestions::Test->QuestionList
 getQuestions (Test questions) = questions
 
 getDNI::RespuestaTest->DNI
@@ -44,5 +45,5 @@ getModel (RespuestaTest _ testModel _) = testModel
 --corrige test responseTest = Correccion (getDNI responseTest) n (n/(length (getQuestions test)))
 --                            where n = corrigeAux (getModel responseTest) (getQuestions test) (getResponses responseTest)
 
---corrigeAux::TestModel->[Question]->Responses->Num
+--corrigeAux::Num a=>TestModel->QuestionList->Responses->a
 --corrigeAux _ _ _ = 0

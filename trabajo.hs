@@ -19,15 +19,17 @@ type Responses = [ChoiceMade]
 data RespuestaTest = RespuestaTest DNI TestModel Responses deriving Show
 
 --Correccion data type
-type CorrectAnswers = Int
+type CorrectAnswers = Float
 type Grade = Float
 data Correccion = Correccion DNI CorrectAnswers Grade deriving Show
-
 
 
 --Getters
 getQuestions::Test->QuestionList
 getQuestions (Test questions) = questions
+
+getNumQuestionFloat::Test->Float
+getNumQuestionFloat (Test questions) = fromIntegral (length questions) :: Float
 
 getDNI::RespuestaTest->DNI
 getDNI (RespuestaTest dni _ _) = dni
@@ -38,12 +40,9 @@ getResponses (RespuestaTest _ _ responses) = responses
 getModel::RespuestaTest->TestModel
 getModel (RespuestaTest _ testModel _) = testModel
 
+corrige::Test->RespuestaTest->Correccion
+corrige test responseTest = Correccion (getDNI responseTest) n (n / (getNumQuestionFloat test))
+                            where n = corrigeAux (getModel responseTest) (getQuestions test) (getResponses responseTest)
 
-
-
---corrige::Test->RespuestaTest->Correccion
---corrige test responseTest = Correccion (getDNI responseTest) n (n/(length (getQuestions test)))
---                            where n = corrigeAux (getModel responseTest) (getQuestions test) (getResponses responseTest)
-
---corrigeAux::Num a=>TestModel->QuestionList->Responses->a
---corrigeAux _ _ _ = 0
+corrigeAux::TestModel->QuestionList->Responses->Float
+corrigeAux _ _ _ = 0

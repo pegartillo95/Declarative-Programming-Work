@@ -19,7 +19,7 @@ type Responses = [ChoiceMade]
 data RespuestaTest = RespuestaTest DNI TestModel Responses deriving Show
 
 --Correccion data type
-type CorrectAnswers = Float
+type CorrectAnswers = Int
 type Grade = Float
 data Correccion = Correccion DNI CorrectAnswers Grade deriving Show
 
@@ -54,14 +54,23 @@ getNumQuestionFloat (Test questions) = fromIntegral (length questions) :: Float
 
 --Other functions
 corrige::Test->RespuestaTest->Correccion
-corrige test responseTest = Correccion (getDNI responseTest) n n --cambiar la primera n por m y hacer que de alguna manera corrige devuelva una tupla(Int,FLoat) en el primero el numero de respuestas correctas y en el segundo la nota
-                            where n = corrigeAux (map getNumChoices (getQuestions test)) (map (correctForAModel (getNumQuestion test)) (getQuestions test)) (getResponses responseTest)
+corrige test responseTest = Correccion (getDNI responseTest) m n --cambiar la primera n por m y hacer que de alguna manera corrige devuelva una tupla(Int,FLoat) en el primero el numero de respuestas correctas y en el segundo la nota
+                            where (m,n) = tupleWrapper (map getNumChoices (getQuestions test)) (map (correctForAModel (getModel responseTest)) (getQuestions test)) (getResponses responseTest) (getNumQuestion test)
 
-corrigeAux::[NumChoices]->[CorrectChoice]->Responses->Float
-corrigeAux [] [] [] = 0.0
-corrigeAux (x:xs) (y:ys) (z:zs)
-      | y == z = corrigeAux xs ys zs + 1.0
-      | otherwise = corrigeAux xs ys zs - (1.0 / ((fromIntegral x)::Float))
+tupleWrapper::[NumChoices]->[CorrectChoice]->Responses->Int->(Int,Float)
+tupleWrapper numchoices correctchoices responses n = (countEquals correctchoices responses ,corrigeAux numchoices correctchoices responses n)
+
+countEquals::[CorrectChoice]->Responses->Int
+countEquals [] [] = 0
+countEquals (x:xs) (y:ys)
+      | x == y = 1 + countEquals xs ys
+      | otherwise = countEquals xs ys
+
+corrigeAux::[NumChoices]->[CorrectChoice]->Responses->Int->Float
+corrigeAux [] [] [] _ = 0.0
+corrigeAux (x:xs) (y:ys) (z:zs) n
+      | y == z = corrigeAux xs ys zs n + (10.0 / ((fromIntegral n)::Float))
+      | otherwise = corrigeAux xs ys zs n - (1.0 / ((fromIntegral x)::Float))
 
 
 correctForAModel::Int->Question->CorrectChoice

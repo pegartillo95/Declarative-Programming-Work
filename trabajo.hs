@@ -1,7 +1,3 @@
---Test is RespuestaTest definiciones
-
---The easiest way to think Test is a list of Questions each of them holding the number of choices and the correct one that will be expresed as a RespuestasTest
-
 --Test type
 type NumChoices = Int
 type CorrectChoice = Int
@@ -23,6 +19,15 @@ type CorrectAnswers = Int
 type Grade = Float
 data Correccion = Correccion DNI CorrectAnswers Grade deriving Show
 
+--Estadisticas data type
+type MeanScore = Float
+type MeanNumber = Int
+type Suspensos = Int
+type Aprobados = Int
+type Notables = Int
+type Sobresalientes = Int
+data Estadisticas = Estadisticas MeanScore MeanNumber Suspensos Aprobados Notables Sobresalientes deriving Show
+
 
 --Getters
 getCorrectByModel::Question->CorrectByModel
@@ -43,6 +48,13 @@ getModel (RespuestaTest _ testModel _) = testModel
 getNumChoices::Question->NumChoices
 getNumChoices (Question numChoices _) = numChoices
 
+getGrade::Correccion->Float
+getGrade (Correccion _ _ grade) = grade
+
+getCorrectAnswers::Correccion->Int
+getCorrectAnswers (Correccion _ correctNum _) = correctNum
+
+
 --Other usefull functions
 
 getNumQuestion::Test->Int
@@ -52,26 +64,63 @@ getNumQuestionFloat::Test->Float
 getNumQuestionFloat (Test questions) = fromIntegral (length questions) :: Float
 
 
---Other functions
+--First part
 corrige::Test->RespuestaTest->Correccion
-corrige test responseTest = Correccion (getDNI responseTest) m n --cambiar la primera n por m y hacer que de alguna manera corrige devuelva una tupla(Int,FLoat) en el primero el numero de respuestas correctas y en el segundo la nota
+corrige test responseTest = Correccion (getDNI responseTest) m n
                             where (m,n) = tupleWrapper (map getNumChoices (getQuestions test)) (map (correctForAModel (getModel responseTest)) (getQuestions test)) (getResponses responseTest) (getNumQuestion test)
 
 tupleWrapper::[NumChoices]->[CorrectChoice]->Responses->Int->(Int,Float)
-tupleWrapper numchoices correctchoices responses n = (countEquals correctchoices responses ,corrigeAux numchoices correctchoices responses n)
+tupleWrapper numchoices correctchoices responses n = (countEqualsQuestions correctchoices responses ,corrigeAux numchoices correctchoices responses n)
 
-countEquals::[CorrectChoice]->Responses->Int
-countEquals [] [] = 0
-countEquals (x:xs) (y:ys)
-      | x == y = 1 + countEquals xs ys
-      | otherwise = countEquals xs ys
+countEqualsQuestions::[CorrectChoice]->Responses->Int
+countEqualsQuestions [] _ = 0
+countEqualsQuestions _ [] = 0
+countEqualsQuestions (x:xs) (y:ys)
+      | x == y = 1 + countEqualsQuestions xs ys
+      | otherwise = countEqualsQuestions xs ys
 
 corrigeAux::[NumChoices]->[CorrectChoice]->Responses->Int->Float
-corrigeAux [] [] [] _ = 0.0
+corrigeAux [] [] _ _ = 0.0
+corrigeAux _ _ [] _ = 0.0
 corrigeAux (x:xs) (y:ys) (z:zs) n
-      | y == z = corrigeAux xs ys zs n + (10.0 / ((fromIntegral n)::Float))
-      | otherwise = corrigeAux xs ys zs n - (1.0 / ((fromIntegral x)::Float))
+      | z == 0 = corrigeAux xs ys zs n
+      | y == z = corrigeAux xs ys zs n + (10.0 / (fromIntegral n))
+      | otherwise = corrigeAux xs ys zs n - (1.0 / (fromIntegral x))
 
 
 correctForAModel::Int->Question->CorrectChoice
 correctForAModel n question  = (getCorrectByModel question)!!(n-1)
+
+
+
+
+
+
+
+
+
+
+
+--Second part
+estadisticas::Test->[RespuestaTest]->Estadisticas
+estadisticas test responsesTest = Estadisticas (mediaFloat (map getGrade resultList)) (mediaInt (map getCorrectAnswers resultList)) (numSuspensos resultList) (numAprobados resultList) (numNotables resultList) (numSobresalientes resultList)
+                                  where 
+                                       resultList = map (corrige test) responsesTest
+
+mediaInt::[Int]-> Int
+mediaInt x = sum x `div` length x
+
+mediaFloat::[Float]->Float
+mediaFloat x = sum x / (fromIntegral (length x))
+
+numSuspensos::[Correccion]->Int
+numSuspensos x = length(filter (<5) (map getGrade x))
+
+numAprobados::[Correccion]->Int
+numAprobados x = length( filter (<7) (filter (>=5) (map getGrade x)))
+
+numNotables::[Correccion]->Int
+numNotables x = length( filter (<9) (filter (>=7) (map getGrade x)))
+
+numSobresalientes::[Correccion]->Int
+numSobresalientes x = length(filter (>=9) (map getGrade x))

@@ -19,9 +19,20 @@ type CorrectAnswers = Int
 type Grade = Float
 data Correccion = Correccion DNI CorrectAnswers Grade deriving Show
 
+--Frecuencias data type
+type FrecAbsAciert = Int
+type FrecAbsFallos = Int
+type FrecAbsBlanco = Int
+type FrecRelAciert = Float
+type FrecRelFallos = Float
+type FrecRelBlanco = Float
+data FrecuenciaPorPregunta = Frecuencias FrecAbsAciert FrecAbsFallos FrecAbsBlanco FrecRelAciert FrecRelFallos FrecRelBlanco deriving Show
+type TodasFrecuencias = [FrecuenciaPorPregunta]
+
+
 --Estadisticas data type
 type MeanScore = Float
-type MeanNumber = Int
+type MeanNumber = Float
 type Suspensos = Int
 type Aprobados = Int
 type Notables = Int
@@ -107,8 +118,12 @@ estadisticas test responsesTest = Estadisticas (mediaFloat (map getGrade resultL
                                   where 
                                        resultList = map (corrige test) responsesTest
 
-mediaInt::[Int]-> Int
-mediaInt x = sum x `div` length x
+suma::(Fractional a, Integral a1)=>[a1]->a
+suma [] = 0.0
+suma (x:xs) = (fromIntegral x) + suma xs
+
+mediaInt::(Fractional a, Integral a1)=>[a1]->a
+mediaInt x = suma x / (fromIntegral (length x))
 
 mediaFloat::[Float]->Float
 mediaFloat x = sum x / (fromIntegral (length x))
@@ -124,3 +139,11 @@ numNotables x = length( filter (<9) (filter (>=7) (map getGrade x)))
 
 numSobresalientes::[Correccion]->Int
 numSobresalientes x = length(filter (>=9) (map getGrade x))
+
+
+
+
+
+
+--data RespuestaTest = RespuestaTest DNI TestModel Responses deriving Show
+responsesAndModelByNum::[RespuestaTest]

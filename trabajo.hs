@@ -211,14 +211,6 @@ peoresPregAux (x:xs) worstQuest n ys
             |otherwise = peoresPregAux xs worstQuest (n+1) ys
 
 
-
---Funciones auxiliares para la mejor y peor pregunta
-fAbsRightNum::Frequencies->FAbsRight
-fAbsRightNum (a,_,_,_,_,_) = a
-
-fAbsBlankNum::Frequencies->FAbsBlank
-fAbsBlankNum (_,_,_,_,a,_) = a
-
 --Devuelve una tupla, el primer numero indica 0 si son iguales, -1 si el segundo es menor y 1 si el segundo es mayor. 
 compareQuestionResult::Frequencies->Frequencies->Int
 compareQuestionResult x y = if (fAbsRightNum x) > (fAbsRightNum y)
@@ -261,11 +253,47 @@ printEstadisticas x = do
                        putStrLn ("Numero suspensos: " ++ (show (getSuspensos x)))
                        putStrLn ("Numero aprobados: " ++ (show (getAprobados x)))
                        putStrLn ("Numero notables: " ++ (show (getNotables x)))
-                       putStrLn ("Numero sobresalientes: " ++ (show (getSobresalientes x))) --Falta outputear las stats en general
+                       putStrLn ("Numero sobresalientes: " ++ (show (getSobresalientes x)))
+                       printFrecRecursivo (zip (take (length (getListFrec x) ) (iterate (+1) 1)) (getListFrec x))
                        putStrLn ("Las mejores preguntas son: " ++ (show (getMejoresPreg x)))
                        putStrLn ("Las peores preguntas son: " ++ (show (getPeoresPreg x)))
                        putStrLn ("Las preguntas mas veces dejadas en blanco son: " ++ (show (getMasBlanco x)))
                        putStrLn ("Las preguntas menos veces dejadas en blanco son: " ++ (show (getMenosBlanco x)))
+
+printFrecRecursivo::[(Int,Frequencies)]->IO ()
+printFrecRecursivo [] = putStrLn("")
+printFrecRecursivo (x:xs) = do
+                             printFrecuencias x
+                             printFrecRecursivo xs
+
+printFrecuencias::(Int,Frequencies)->IO ()
+printFrecuencias (i,frec) = do
+                          putStrLn ("Estadisticas de la pregunta " ++ (show i) ++ ": ")
+                          putStrLn ("    Frecuencia absoluta aciertos: " ++ (show (fAbsRightNum frec)))
+                          putStrLn ("    Frecuencia relativa aciertos: " ++ (show (fRelRightNum frec)))
+                          putStrLn ("    Frecuencia absoluta fallos: " ++ (show (fAbsWrongNum frec)))
+                          putStrLn ("    Frecuencia relativa fallos: " ++ (show (fRelWrongNum frec)))
+                          putStrLn ("    Frecuencia absoluta blancos: " ++ (show (fAbsBlankNum frec)))
+                          putStrLn ("    Frecuencia relativa blancos: " ++ (show (fRelBlankNum frec)))
+
+--Getters Frecuencies
+fAbsRightNum::Frequencies->FAbsRight
+fAbsRightNum (a,_,_,_,_,_) = a
+
+fRelRightNum::Frequencies->FRelRight
+fRelRightNum (_,b,_,_,_,_) = b
+
+fAbsWrongNum::Frequencies->FAbsWrong
+fAbsWrongNum (_,_,c,_,_,_) = c
+
+fRelWrongNum::Frequencies->FRelWrong
+fRelWrongNum (_,_,_,d,_,_) = d
+
+fAbsBlankNum::Frequencies->FAbsBlank
+fAbsBlankNum (_,_,_,_,e,_) = e
+
+fRelBlankNum::Frequencies->FRelBlank
+fRelBlankNum (_,_,_,_,_,f) = f
 
 
 --Getters de Estadisticas

@@ -5,7 +5,6 @@ type CorrectByModel = [CorrectChoice]
 data Question = Question NumChoices CorrectByModel deriving Show
 type QuestionList = [Question]
 data Test = Test QuestionList deriving Show
--- let x = Test [Question 3 [1,2], Question 4 [4,3], Question 3 [3,3], Question 3 [1,3], Question 4 [3,4], Question 3 [1,1],Question 4 [1,4], Question 5 [5,2]]
 
 --RespuestasTest data type
 type ChoiceMade = Int --We are going to consider 0 as a blank answer to a question from the student
@@ -13,9 +12,6 @@ type DNI = Int
 type TestModel = Int
 type Responses = [ChoiceMade]
 data RespuestaTest = RespuestaTest DNI TestModel Responses deriving Show
---let a = RespuestaTest 34278853 1 [2,0,1,2,2,0,4,5]
---let b = RespuestaTest 34278854 2 [0,1,3,0,4,0,2,2]
---let c = RespuestaTest 34278855 1 [1,0,2,2,1,0,1,0]
 
 --Correccion data type
 type CorrectAnswers = Int
@@ -95,14 +91,19 @@ getNumQuestionFloat::Test->Float
 getNumQuestionFloat (Test questions) = fromIntegral (length questions) :: Float
 
 
---First part corrige and all the auxiliary functions needed
+
+------------------------------------------------------------
+--First part: corrige and all the auxiliary functions needed
+------------------------------------------------------------
 corrige::Test->RespuestaTest->Correccion
 corrige test responseTest = Correccion (getDNI responseTest) m n
                             where (m,n) = tupleWrapper (map getNumChoices (getQuestions test)) (map (correctForAModel (getModel responseTest)) (getQuestions test)) (getResponses responseTest) (getNumQuestion test)
 
+--Esta funcion simplemente es para juntar en una tupla el numero de respuestas correctas y la nota de corregir un examen.
 tupleWrapper::[NumChoices]->[CorrectChoice]->Responses->Int->(Int,Float)
 tupleWrapper numchoices correctchoices responses n = (countEqualsQuestions correctchoices responses ,corrigeAux numchoices correctchoices responses n)
 
+--Cuenta el numero de preguntas acertadas 
 countEqualsQuestions::[CorrectChoice]->Responses->Int
 countEqualsQuestions [] _ = 0
 countEqualsQuestions _ [] = 0
@@ -110,6 +111,7 @@ countEqualsQuestions (x:xs) (y:ys)
       | x == y = 1 + countEqualsQuestions xs ys
       | otherwise = countEqualsQuestions xs ys
 
+--Calcula la nota sacada por un alumno en el examen
 corrigeAux::[NumChoices]->[CorrectChoice]->Responses->Int->Float
 corrigeAux [] [] _ _ = 0.0
 corrigeAux _ _ [] _ = 0.0
@@ -118,13 +120,14 @@ corrigeAux (x:xs) (y:ys) (z:zs) n
       | y == z = corrigeAux xs ys zs n + (10.0 / (fromIntegral n))
       | otherwise = corrigeAux xs ys zs n - (1.0 / (fromIntegral x))
 
-
+--Devuelve para un modelo cual es la respuesta correcta a una pregunta.
 correctForAModel::Int->Question->CorrectChoice
 correctForAModel n question  = (getCorrectByModel question)!!(n-1)
 
 
-
---Second part
+------------------------------------------------------------------------------------------
+--Second part: Corregir un conjunto de examenes y devolver las estadistcas de todos ellos.
+------------------------------------------------------------------------------------------
 estadisticas::Test->[RespuestaTest]->Estadisticas
 estadisticas test responsesTest = Estadisticas (mediaFloat (map getGrade resultList)) (mediaInt (map numRespondidas responsesTest)) (numSuspensos resultList) (numAprobados resultList) (numNotables resultList) (numSobresalientes resultList) frecList mejores peores masBlanco menosBlanco 
                                   where
@@ -133,6 +136,7 @@ estadisticas test responsesTest = Estadisticas (mediaFloat (map getGrade resultL
                                        (mejores,peores,masBlanco,menosBlanco) = ((mejoresPreguntas frecList), (peoresPregunta frecList), (masEnBlanco frecList), (menosEnBlanco frecList))
 
 
+--Tres funciones auxiliares que son una suma de una lista y las dos medias que solo se diferencian en el tipo de entrada y de la salida
 suma::(Fractional a, Integral a1)=>[a1]->a
 suma [] = 0.0
 suma (x:xs) = (fromIntegral x) + suma xs
@@ -143,6 +147,7 @@ mediaInt x = suma x / (fromIntegral (length x))
 mediaFloat::[Float]->Float
 mediaFloat x = sum x / (fromIntegral (length x))
 
+--Estas cuatro funciones son filters de todas las notas sacadas y de esa manera puedo clasificarlos facil en las 4 categorias segun la nota.
 numSuspensos::[Correccion]->Int
 numSuspensos x = length(filter (<5) (map getGrade x))
 
@@ -155,6 +160,7 @@ numNotables x = length( filter (<9) (filter (>=7) (map getGrade x)))
 numSobresalientes::[Correccion]->Int
 numSobresalientes x = length(filter (>=9) (map getGrade x))
 
+--Dado las respuestas a un examen de un alumno devuelve cuantas de ellas ha respondido es decir todas las que no estan en blanco.
 numRespondidas::RespuestaTest->Int
 numRespondidas respuestaTest = numRespondidasAux (getResponses respuestaTest)
 
@@ -165,15 +171,14 @@ numRespondidasAux (x:xs)
                  | otherwise = (1+numRespondidasAux xs)
 
 
-
---listStatistics and all the auxiliary functions used to calculate it. It returns a list of statistics each position for a diferent question
+--listStatistics devuelve la lista de las estadisticas para cada posicion para una pregunta diferente.
 listStatistics::Test->[RespuestaTest]->[Frequencies]
 listStatistics test listResponses = [statisticsForAQuestion (getCorrectByModel ((getQuestions test) !! i)) (modelAndChoiceByNum !! i) | i <-[0..(length (getQuestions test)-1)]]
                                     where
                                         listModelAndChoices = map responsesAndModelByNum listResponses
                                         modelAndChoiceByNum = [ (map (!!i) listModelAndChoices) | i<-[0..(length (getQuestions test)-1)]]
 
-
+--Dadas las respuestas a un examen de un alumno hace una lista de tuplas con el modelo del examen del alumno junto a su respuesta al examen.
 responsesAndModelByNum::RespuestaTest->[ModelAndChoice]
 responsesAndModelByNum respuesta = zip (take (length (getResponses respuesta)) (repeat (getModel respuesta))) (getResponses respuesta)
 
@@ -188,8 +193,8 @@ statisticsAux correct (t:ts) length x y z
                       |(getChoice t) == correct!!((getModelModelAndChoice t)-1) = statisticsAux correct ts length (x+1) y z
                       |otherwise = statisticsAux correct ts length x (y+1) z
 
---Functions to get the best/worst questions and most/less times blank im doing this as a list because we can have several with the same statistics
---I have considered the best question the one with the most correct responses and in case
+--Funciontes para conseguir las mejores/peores y las que mas/menos veces se han dejado en blanco. Las he tomado como una lista porque puede haber varias preguntas con las mejores estadisticas
+--He considerado la mejor pregunta aquella que mas veces se ha acertado y en caso de empate en aciertos la que mas veces se ha dejado en blanco(respectivamente menos veces se ha fallado)
 mejoresPreguntas::[Frequencies]->[Int]
 mejoresPreguntas (f:fs) = mejoresPregAux fs f 2 [1]
 
@@ -260,6 +265,7 @@ printEstadisticas x = do
                        putStrLn ("Las preguntas mas veces dejadas en blanco son: " ++ (show (getMasBlanco x)))
                        putStrLn ("Las preguntas menos veces dejadas en blanco son: " ++ (show (getMenosBlanco x)))
 
+--Las dos funciones para printear los datos de la frecuencia de las preguntas que viene dado en una lista en la que cada posicion son las estadisticas de una pregunta.
 printFrecRecursivo::[(Int,Frequencies)]->IO ()
 printFrecRecursivo [] = putStrLn("")
 printFrecRecursivo (x:xs) = do
@@ -330,6 +336,13 @@ getMasBlanco (Estadisticas _ _ _ _ _ _ _ _ _ masBlanco _) = masBlanco
 getMenosBlanco::Estadisticas->PreguntasMenosBlanco
 getMenosBlanco (Estadisticas _ _ _ _ _ _ _ _ _ _ menosBlanco) = menosBlanco
 
+
+
+
+---------------------------------------------------------------------------
+--EJEMPLO DE EJECUCION SI QUIERES USARLO PARA PROBARLO
+---------------------------------------------------------------------------
+
 --Ejemplo Test
 -- let x = Test [Question 3 [1,2], Question 4 [4,3], Question 3 [3,3], Question 3 [1,3], Question 4 [3,4], Question 3 [1,1],Question 4 [1,4], Question 5 [5,2]]
 
@@ -338,3 +351,5 @@ getMenosBlanco (Estadisticas _ _ _ _ _ _ _ _ _ _ menosBlanco) = menosBlanco
 --let b = RespuestaTest 34278854 2 [0,1,3,0,4,0,2,2]
 --let c = RespuestaTest 34278855 1 [1,0,2,2,1,0,1,0]
 --let y = a:b:c:[]
+
+--Despues con ellos llamar a las funciones pertinentes.
